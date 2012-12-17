@@ -1,8 +1,9 @@
 ﻿module FSharp.Reactive
 
 open System
-open System.Linq
-open System.Concurrency
+open System.Reactive
+open System.Reactive.Linq
+open System.Reactive.Concurrency
 
 type Observer with
   /// Creates an observer from the specified onNext function.
@@ -28,7 +29,7 @@ type Observable with
 
   /// Creates an observable sequence from the specified Subscribe method implementation.
   static member Create subscribe =
-    Observable.CreateWithDisposable(Func<_,IDisposable> subscribe)
+    Observable.Create(Func<_,IDisposable> subscribe)
   
 module Observable =
   /// Binds an observable to generate a subsequent observable.
@@ -38,8 +39,8 @@ module Observable =
   let create (f:'a IObserver -> unit -> unit) = Observable.Create f
 
   /// Generates an observable from an IEvent<_> as an EventPattern.
-  let fromEvent<'a> (target:obj) eventName =
-    Observable.FromEvent(target, eventName)
+  let fromEventPattern<'a> (target:obj) eventName =
+    Observable.FromEventPattern(target, eventName)
   
   /// Generates an empty observable
   let empty<'a> = Observable.Empty<'a>()
@@ -184,7 +185,7 @@ type ObservableBuilder() =
   member this.TryFinally(m:IObservable<_>, compensation: unit -> unit) = Observable.Finally(m, Action(compensation))
   member this.Using(res:#IDisposable, body) = this.TryFinally(body res, fun () -> match res with null -> () | disp -> disp.Dispose())
   member this.While(guard, m) = if not (guard()) then this.Zero() else m >>= fun () -> this.While(guard, m)
-  member this.For(sequence, body) = Observable.For(sequence, body)
+  member this.For(sequence, body) = Observable.ForEach(sequence, body)
   member this.Yield(x) = mreturn x
   member this.YieldFrom(m:IObservable<_>) = m
 
